@@ -67,7 +67,6 @@ if __name__ == "__main__":
     rc.save_to_file()
 
     # rc.new_rc_step()
-    # rc.save_to_file()
     # rc.match_records()
     # rc.not_match_records()
     # rc.save_to_file()
