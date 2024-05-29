@@ -111,6 +111,6 @@ class DataExtractor:
             .with_columns(self.repeat_key_exp)
         )
 
-        external_df.write_csv("./results/external.csv")
+        # external_df.write_csv("./results/external.csv")
 
         return external_df
