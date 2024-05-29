@@ -12,6 +12,8 @@ import os
 
 patch_all()
 pl.Config.set_fmt_float("full")
+pl.Config.set_tbl_rows(50)
+pl.Config.set_fmt_str_lengths(300)
 
 # Constants
 CONCILIATION_STATUS = "CONCILIATED"
@@ -24,7 +26,7 @@ RC_KEYS_JSON = [
     {"ext_col": "codigo_ksh", "int_col": "transaction_code"},
     {"ext_col": "importe", "int_col": "approved_transaction_amount"},
     {"ext_col": "fecha", "int_col": "create_timestamp"},
-    {"ext_col": "digitos_bin", "int_col": "tmp1_bin_code"},
+    {"ext_col": "digitos_bin", "int_col": "bin_code"},
     {"ext_col": "kind_card", "int_col": "card_type"},
     {"ext_col": "ultimos4", "int_col": "last_four_digit_code"},
 ]
@@ -52,7 +54,7 @@ EXECUTION_DATE = str(datetime.date.today())
 EXECUTION_TIMESTAMP = int(time.mktime(datetime.datetime.now().timetuple()) * 1000)
 
 # Filters for query internal data
-TIMESTAMP_FROM = 1711929600000  # 2024-04-01 00:00:00
+TIMESTAMP_FROM = 1712102400000  # 2024-04-03 00:00:00
 TIMESTAMP_TO = 1712188800000  # 2024-04-04 00:00:00
 PROCESSOR_NAME = "Kushki Acquirer Processor"
 
@@ -510,6 +512,7 @@ if __name__ == "__main__":
     ksh_df = get_internal_df(int_prjt_exp, schema)
     print(ksh_df.collect())
 
+    # Get remanent data to conciliate
     ksh_remanent_df = get_remanent_internal_df(rmnt_int_prjt_exp, schema)
     ksh_complete_df = pl.concat([ksh_df, ksh_remanent_df]).unique(
         keep="first", maintain_order=True
@@ -529,15 +532,15 @@ if __name__ == "__main__":
     print(duplicate_df.collect())
 
     # Get records that are in Kushki data but not in external data
-    unmatching_df = get_internal_not_matching_records(
+    a_to_b_unmatching_df = get_internal_not_matching_records(
         ksh_complete_df, external_df, join_exp
     )
-    print(unmatching_df.collect())
+    print(a_to_b_unmatching_df.collect())
 
     # Get records that are in external data but not in Kushki data
-    unmatching_df_2 = get_external_not_matching_records(
+    b_to_a_unmatching_df = get_external_not_matching_records(
         external_df, ksh_complete_df, join_exp
     )
-    print(unmatching_df_2.collect())
+    print(b_to_a_unmatching_df.collect())
 
-    persist_results(matching_df, unmatching_df, unmatching_df_2)
+    # persist_results(matching_df, a_to_b_unmatching_df, b_to_a_unmatching_df)

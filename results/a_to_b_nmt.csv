@@ -1,0 +1,2 @@
+_id,reference_transaction_code,approval_code,processor_type,merchant_name,processor_name,transaction_code,transaction_status_type,transaction_type,approved_transaction_amount,create_timestamp,bin_code,card_type,last_four_digit_code
+821714523393191606388,42c0b887-2c5f-48df-8264-7d20cc611f66,358371,aggregator_formal,Aplazo,Kushki Acquirer Processor,821714523393191606388,APPROVED,SALE,116.87,1714523393000,44217700,debit,2273
