@@ -1,6 +1,6 @@
 import uuid
 import datetime
-import json 
+import json
 import time
 
 # Constants
@@ -29,13 +29,15 @@ DEFAULT_INTERNAL_FIELDS = [
     "transaction_code",
     "transaction_status_type",
     "transaction_type",
+    "ticket_code",
+    "sale_ticket_code",
 ]
 INTEGER_FIELDS = ["create_timestamp"]
 DOUBLE_FIELDS = ["approved_transaction_amount"]
 
 # Filters for query internal data
-TIMESTAMP_FROM = 1714521600000  # 2024-05-01 00:00:00 records: 1536 aprobadas
-TIMESTAMP_TO = 1714523400000  # 2024-05-01 00:30:00
+TIMESTAMP_FROM = 1714521600000  # 2024-05-01 00:00:00
+TIMESTAMP_TO = 1714607999000  # 2024-05-01 23:59:59
 PROCESSOR_NAME = "Kushki Acquirer Processor"
 COUNTRY_NAME = "Mexico"
 TRANSACTION_STATUSES = ["APPROVED"]

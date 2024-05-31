@@ -58,13 +58,14 @@ if __name__ == "__main__":
     print(file_df)
 
     rc = Reconciliator(exp_builder.join_exp, odl_df, file_df)
+
+    rc.apply_zero_effect()
     rc.match_records()
     rc.not_match_records()
     rc.save_to_file()
-
-    rc.new_rc_step()
-    rc.apply_tolerance()
-    rc.save_to_file()
+    # rc.new_rc_step()
+    # rc.apply_tolerance()
+    # rc.save_to_file()
 
     # rc.new_rc_step()
     # rc.match_records()

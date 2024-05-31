@@ -13,6 +13,8 @@ class Reconciliator:
         self.a_to_b_mt = pl.DataFrame()
         self.a_to_b_nmt = pl.DataFrame()
         self.b_to_a_nmt = pl.DataFrame()
+        self.z_eff_a = pl.DataFrame()
+        self.z_eff_b = pl.DataFrame()
         self.join_exp = join_exp
 
     def _process_duplicates(self, df: pl.DataFrame, col_name: str):
@@ -103,7 +105,7 @@ class Reconciliator:
         a_columns = self.join_exp["a_columns"].copy()
         b_columns = self.join_exp["b_columns"].copy()
         drop_columns = []
-        
+
         for rule in tlr_rules:
             clm_name = f"ext_{rule['field']}"
             if clm_name in self.join_exp["b_columns"]:
@@ -134,13 +136,19 @@ class Reconciliator:
         # dups_df = join_df.filter(pl.all_horizontal(pl.col(a_columns).is_duplicated()))
         match_tolerance_df = join_df.filter(mt_tolerance_exp)
         # nmt_tolerance_df = join_df.filter(nmt_tolerance_exp)
-        mt_tl_unique_df = match_tolerance_df.unique(subset=a_columns, keep="first", maintain_order=True)
+        mt_tl_unique_df = match_tolerance_df.unique(
+            subset=a_columns, keep="first", maintain_order=True
+        )
 
-        self.a_to_b_nmt = self.odl_df.join(mt_tl_unique_df, left_on=a_columns, right_on=a_columns, how="anti")
-        self.b_to_a_nmt = self.file_df.join(mt_tl_unique_df, left_on=b_mdf_cols, right_on=b_mdf_cols, how="anti")
-        self.a_to_b_mt = pl.concat([self.a_to_b_mt, mt_tl_unique_df.drop(drop_columns)], how="diagonal")
-
-
+        self.a_to_b_nmt = self.odl_df.join(
+            mt_tl_unique_df, left_on=a_columns, right_on=a_columns, how="anti"
+        )
+        self.b_to_a_nmt = self.file_df.join(
+            mt_tl_unique_df, left_on=b_mdf_cols, right_on=b_mdf_cols, how="anti"
+        )
+        self.a_to_b_mt = pl.concat(
+            [self.a_to_b_mt, mt_tl_unique_df.drop(drop_columns)], how="diagonal"
+        )
 
         # join_df.write_csv(f"./results/join_tolerance_df({self.iterations}).csv")
         # dups_df.write_csv(f"./results/dup_tolerance_df({self.iterations}).csv")
@@ -151,6 +159,44 @@ class Reconciliator:
         # odl_after_df.write_csv(f"./results/odl_after_df({self.iterations}).csv")
         # file_after_df.write_csv(f"./results/file_after_df({self.iterations}).csv")
 
+    def apply_zero_effect(self):
+        zero_effect_rules = [
+            {
+                "source": "a",
+                "field": "transaction_type",
+                "values": ["SALE", "VOID"],
+                "mt_cols": {
+                    "b1_cols": ["ticket_code", "approved_transaction_amount"],
+                    "b2_cols": ["sale_ticket_code", "approved_transaction_amount"],
+                },
+            },
+        ]
+
+        for rule in zero_effect_rules:
+            b1_key_cols = rule["mt_cols"]["b1_cols"]
+            b2_key_cols = rule["mt_cols"]["b2_cols"]
+
+            if rule["source"] == "a":
+                kind1_df = self.odl_df.filter(
+                    pl.col(rule["field"]).eq(rule["values"][0])
+                )
+                kind1_df.write_csv(f"./results/kind1_df({self.iterations}).csv")
+
+                kind2_df = self.odl_df.filter(
+                    pl.col(rule["field"]).eq(rule["values"][1])
+                )
+                kind2_df.write_csv(f"./results/kind2_df({self.iterations}).csv")
+
+                mt_df = kind1_df.join(
+                    kind2_df, left_on=b1_key_cols, right_on=b2_key_cols, how="inner"
+                ).sort(b1_key_cols)
+                mt_df.write_csv(f"./results/mt_df({self.iterations}).csv")
+
+                self.z_eff_a = pl.concat([self.z_eff_a, mt_df], how="diagonal")
+                self.odl_df = self.odl_df.join(
+                    mt_df, left_on="_id", right_on="_id", how="anti"
+                ).join(mt_df, left_on="_id", right_on="_id_right", how="anti")
+                self.odl_df.write_csv(f"./results/odl_df({self.iterations}).csv")
 
     def new_rc_step(self):
         self.odl_df = self.a_to_b_nmt
